@@ -1,3 +1,5 @@
+import type { MediaKey } from "@/lib/media";
+
 export const INTEREST_TAGS = [
   "건강관리",
   "등산",
@@ -62,18 +64,29 @@ export const STEP_LABEL: Record<StepKind, string> = {
   chat: "AI 대화",
 };
 
+export type ListenOption = { label: string; image?: MediaKey };
+
 export type SessionStep =
   | {
       kind: "listen";
+      /** text: 텍스트 2개 중 고르기 / image: 그림 2개 중 고르기 */
+      mode: "text" | "image";
       title: string;
       prompt: string;
       audioText: string;
-      options: [string, string];
+      options: [ListenOption, ListenOption];
       answer: 0 | 1;
     }
-  | { kind: "naming"; title: string; prompt: string; hint: string; answer: string }
+  | {
+      kind: "naming";
+      title: string;
+      prompt: string;
+      hint: string;
+      answer: string;
+      image: MediaKey;
+    }
   | { kind: "repeat"; title: string; sentence: string }
-  | { kind: "spontaneous"; title: string; prompt: string }
+  | { kind: "spontaneous"; title: string; prompt: string; image: MediaKey }
   | { kind: "chat"; title: string; turns: string[]; minTurns: number; maxTurns: number };
 
 /** AI 대화는 4문항으로 계산합니다. */
@@ -126,25 +139,36 @@ const cafe: SessionStep[] = [
     prompt: "사진 속 음료의 이름을 말씀해 주세요.",
     hint: "원두를 내려 만든 따뜻한 음료예요",
     answer: "커피",
+    image: "coffee",
   },
   {
     kind: "listen",
+    mode: "text",
     title: "음료 특징 이해",
     prompt: "들려드린 문장에 맞는 답을 골라 주세요.",
     audioText: "이 음료는 우유를 넣어 부드러워요.",
-    options: ["우유를 넣어 부드러워요", "얼음만 넣은 음료예요"],
+    options: [{ label: "우유를 넣어 부드러워요" }, { label: "얼음만 넣은 음료예요" }],
     answer: 0,
   },
   {
     kind: "listen",
+    mode: "image",
     title: "주문할 음료 찾기",
-    prompt: "들려드린 문장에 맞는 답을 골라 주세요.",
+    prompt: "들려드린 문장에 맞는 그림을 골라 주세요.",
     audioText: "따뜻한 커피 한 잔 주세요.",
-    options: ["차가운 주스를 주문했어요", "따뜻한 커피를 주문했어요"],
+    options: [
+      { label: "차가운 주스", image: "icedjuice" },
+      { label: "따뜻한 커피", image: "coffee" },
+    ],
     answer: 1,
   },
   { kind: "repeat", title: "주문 표현 따라하기", sentence: "따뜻한 커피 한 잔 주세요." },
-  { kind: "spontaneous", title: "직접 주문하기", prompt: "카페에서 음료를 주문해 보세요." },
+  {
+    kind: "spontaneous",
+    title: "직접 주문하기",
+    prompt: "카페에서 음료를 주문해 보세요.",
+    image: "cafe_order",
+  },
   { kind: "repeat", title: "주문 확인에 응답하기", sentence: "네, 여기서 마시고 갈게요." },
   {
     kind: "naming",
@@ -152,8 +176,14 @@ const cafe: SessionStep[] = [
     prompt: "사진 속 물건의 이름을 말씀해 주세요.",
     hint: "받침 위에 놓인 잔이에요",
     answer: "커피잔",
+    image: "coffeecup",
   },
-  { kind: "spontaneous", title: "음료 받는 상황 설명하기", prompt: "음료를 받는 장면을 설명해 주세요." },
+  {
+    kind: "spontaneous",
+    title: "음료 받는 상황 설명하기",
+    prompt: "음료를 받는 장면을 설명해 주세요.",
+    image: "cafe_receive",
+  },
   cafeChat,
 ];
 
@@ -164,25 +194,36 @@ const hospital: SessionStep[] = [
     prompt: "사진 속 장소의 이름을 말씀해 주세요.",
     hint: "진료를 받는 곳이에요",
     answer: "병원",
+    image: "hospital",
   },
   {
     kind: "listen",
+    mode: "text",
     title: "접수 안내 이해",
     prompt: "들려드린 문장에 맞는 답을 골라 주세요.",
     audioText: "이름과 생년월일을 말씀해 주세요.",
-    options: ["이름과 생년월일을 물어봤어요", "진료비를 물어봤어요"],
+    options: [{ label: "이름과 생년월일을 물어봤어요" }, { label: "진료비를 물어봤어요" }],
     answer: 0,
   },
   {
     kind: "listen",
+    mode: "image",
     title: "내 증상 고르기",
-    prompt: "들려드린 문장에 맞는 답을 골라 주세요.",
+    prompt: "들려드린 문장에 맞는 그림을 골라 주세요.",
     audioText: "어제부터 목이 아팠어요.",
-    options: ["다리를 다쳤어요", "어제부터 목이 아팠어요"],
+    options: [
+      { label: "다리를 다쳤어요", image: "hurt_leg" },
+      { label: "목이 아파요", image: "sore_throat" },
+    ],
     answer: 1,
   },
   { kind: "repeat", title: "접수 표현 따라하기", sentence: "진료 접수 부탁드립니다." },
-  { kind: "spontaneous", title: "직접 접수하기", prompt: "접수 창구에서 접수해 보세요." },
+  {
+    kind: "spontaneous",
+    title: "직접 접수하기",
+    prompt: "접수 창구에서 접수해 보세요.",
+    image: "hospital_reception",
+  },
   { kind: "repeat", title: "진료 확인에 응답하기", sentence: "네, 이쪽에서 기다리겠습니다." },
   {
     kind: "naming",
@@ -190,8 +231,14 @@ const hospital: SessionStep[] = [
     prompt: "사진 속 물건의 이름을 말씀해 주세요.",
     hint: "몸의 열을 재는 물건이에요",
     answer: "체온계",
+    image: "thermometer",
   },
-  { kind: "spontaneous", title: "진료받는 상황 설명하기", prompt: "진료실에서의 장면을 설명해 주세요." },
+  {
+    kind: "spontaneous",
+    title: "진료받는 상황 설명하기",
+    prompt: "진료실에서의 장면을 설명해 주세요.",
+    image: "hospital_exam",
+  },
   hospitalChat,
 ];
 
@@ -199,10 +246,11 @@ const hospital: SessionStep[] = [
 const daily: SessionStep[] = [
   {
     kind: "listen",
+    mode: "text",
     title: "알아듣기",
     prompt: "들려드린 문장에 맞는 답을 골라 주세요.",
     audioText: "오늘은 비가 와서 우산을 챙겼어요.",
-    options: ["우산을 챙겼어요", "모자를 챙겼어요"],
+    options: [{ label: "우산을 챙겼어요" }, { label: "모자를 챙겼어요" }],
     answer: 0,
   },
   {
@@ -211,15 +259,25 @@ const daily: SessionStep[] = [
     prompt: "사진 속 물건의 이름을 말씀해 주세요.",
     hint: "비 올 때 쓰는 물건이에요",
     answer: "우산",
+    image: "umbrella",
   },
   { kind: "repeat", title: "따라말하기", sentence: "오늘 날씨가 참 좋습니다." },
-  { kind: "spontaneous", title: "자발화", prompt: "오늘 아침에 하신 일을 말씀해 주세요." },
+  {
+    kind: "spontaneous",
+    title: "자발화",
+    prompt: "오늘 아침에 하신 일을 말씀해 주세요.",
+    image: "morning",
+  },
   {
     kind: "listen",
+    mode: "image",
     title: "알아듣기",
-    prompt: "들려드린 문장에 맞는 답을 골라 주세요.",
+    prompt: "들려드린 문장에 맞는 그림을 골라 주세요.",
     audioText: "시장에서 사과를 두 개 샀어요.",
-    options: ["배를 세 개 샀어요", "사과를 두 개 샀어요"],
+    options: [
+      { label: "배 세 개", image: "pear" },
+      { label: "사과 두 개", image: "apple" },
+    ],
     answer: 1,
   },
   {
@@ -228,9 +286,15 @@ const daily: SessionStep[] = [
     prompt: "사진 속 물건의 이름을 말씀해 주세요.",
     hint: "빨갛고 아삭한 과일이에요",
     answer: "사과",
+    image: "apple",
   },
   { kind: "repeat", title: "따라말하기", sentence: "가까운 곳에 잠시 다녀왔습니다." },
-  { kind: "spontaneous", title: "자발화", prompt: "사진 속 장면을 설명해 주세요." },
+  {
+    kind: "spontaneous",
+    title: "자발화",
+    prompt: "사진 속 장면을 설명해 주세요.",
+    image: "market",
+  },
   {
     kind: "chat",
     title: "AI 대화",
