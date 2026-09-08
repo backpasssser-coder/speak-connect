@@ -1,7 +1,5 @@
 # Speak & Connect
 
-모바일 화면 만들어줘
-
 1. Target
 
 Primary Target
