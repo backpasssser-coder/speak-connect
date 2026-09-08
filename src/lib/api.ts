@@ -62,7 +62,10 @@ async function request<T>(
       },
     });
   } catch (e) {
-    throw new ApiError(0, "E_NETWORK", "서버에 연결할 수 없어요. 네트워크 상태를 확인해주세요.", String(e));
+    // fetch()가 던지는 실제 예외 메시지를 그대로 노출 (CORS 차단, DNS 실패, 타임아웃 등 원인이 제각각이라
+    // 뭉뚱그린 안내 문구만으로는 진단이 불가능함 — Mac 없이 기기 콘솔을 볼 수 없는 환경이라 더더욱 필요)
+    const raw = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    throw new ApiError(0, "E_NETWORK", `네트워크 요청 실패 (${url}) — ${raw}`, raw);
   }
 
   let json: ApiEnvelope<T> | null = null;
