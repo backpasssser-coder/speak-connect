@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Btn, Loading, Screen } from "@/components/app/ui";
+import { Btn, Card, Loading, Screen } from "@/components/app/ui";
 import { signInWithGoogle } from "@/lib/auth";
 import duck from "@/assets/duck.png";
 
@@ -27,15 +27,19 @@ export const Route = createFileRoute("/")({
 function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   const signIn = async () => {
     setLoading(true);
+    setErrorDetail(null);
     try {
       const { isNewUser } = await signInWithGoogle();
       navigate({ to: isNewUser ? "/signup" : "/home" });
     } catch (err) {
       console.error(err);
-      toast.error("Google 로그인에 실패했어요. 다시 시도해주세요.");
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Google 로그인에 실패했어요.", { duration: 15000 });
+      setErrorDetail(message);
       setLoading(false);
     }
   };
@@ -77,6 +81,13 @@ function LoginPage() {
           </p>
         </div>
       )}
+
+      {errorDetail ? (
+        <Card className="mt-3 border-destructive/40 bg-destructive/5 text-left">
+          <p className="text-[13px] font-semibold text-destructive">로그인 실패 상세 (개발용)</p>
+          <p className="mt-1 break-all text-[12px] text-muted-foreground">{errorDetail}</p>
+        </Card>
+      ) : null}
     </Screen>
   );
 }
