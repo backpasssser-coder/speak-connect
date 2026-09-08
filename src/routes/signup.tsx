@@ -1,7 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Btn, Card, DuckSays, PageTitle, Screen } from "@/components/app/ui";
 import { INTEREST_TAGS } from "@/lib/learning";
+import { getCurrentFirebaseUid } from "@/lib/auth";
+import { saveUserProfile } from "@/lib/firestore";
 import { Camera, Check } from "lucide-react";
 import duck from "@/assets/duck.png";
 
@@ -41,8 +44,24 @@ function SignupPage() {
 
       <form
         className="mt-6 space-y-5"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
+          const form = new FormData(e.currentTarget);
+          try {
+            const uid = await getCurrentFirebaseUid();
+            if (uid) {
+              await saveUserProfile(uid, {
+                name,
+                gender: String(form.get("gender") ?? ""),
+                birthDate: String(form.get("birth") ?? ""),
+                hobby: String(form.get("hobby") ?? ""),
+                interestTags: tags,
+              });
+            }
+          } catch (err) {
+            console.error(err);
+            toast.error("프로필 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+          }
           navigate({ to: "/survey" });
         }}
       >
@@ -108,7 +127,7 @@ function SignupPage() {
           <label htmlFor="birth" className="block text-[15px] font-semibold">
             생년월일
           </label>
-          <input id="birth" type="date" className={field} required />
+          <input id="birth" name="birth" type="date" className={field} required />
         </div>
 
         <div className="space-y-2">
@@ -116,7 +135,7 @@ function SignupPage() {
           <label htmlFor="hobby" className="block text-[15px] font-semibold">
             취미
           </label>
-          <input id="hobby" className={field} placeholder="예) 산책, 텃밭 가꾸기" />
+          <input id="hobby" name="hobby" className={field} placeholder="예) 산책, 텃밭 가꾸기" />
         </div>
 
         <Card className="space-y-3">

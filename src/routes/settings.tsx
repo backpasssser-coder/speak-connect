@@ -1,8 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card, PageTitle, Screen } from "@/components/app/ui";
 import { BottomNav } from "@/components/app/BottomNav";
 import { ChevronRight } from "lucide-react";
+import { signOut } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -40,6 +43,19 @@ function Toggle({ label, desc, defaultOn = true }: { label: string; desc: string
 }
 
 function SettingsPage() {
+  const navigate = useNavigate();
+  const session = getSession();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate({ to: "/" });
+    } catch (err) {
+      console.error(err);
+      toast.error("로그아웃에 실패했어요. 다시 시도해주세요.");
+    }
+  };
+
   return (
     <>
       <Screen>
@@ -50,8 +66,10 @@ function SettingsPage() {
             덕
           </span>
           <div className="flex-1">
-            <p className="text-[17px] font-bold">김덕분 님</p>
-            <p className="mt-0.5 text-[14px] text-muted-foreground">Google 계정으로 연결됨</p>
+            <p className="text-[17px] font-bold">{session?.user.nickname ?? "게스트"} 님</p>
+            <p className="mt-0.5 text-[14px] text-muted-foreground">
+              {session ? `Google 계정으로 연결됨 (${session.user.email})` : "로그인이 필요해요"}
+            </p>
           </div>
           <ChevronRight size={22} strokeWidth={2.2} aria-hidden className="text-muted-foreground" />
         </Card>
@@ -75,7 +93,10 @@ function SettingsPage() {
 
         <h2 className="mb-2 mt-6 text-[15px] font-bold text-muted-foreground">계정</h2>
         <Card className="divide-y divide-border py-1">
-          <button className="flex w-full items-center justify-between py-3 text-left text-[16px] font-semibold">
+          <button
+            onClick={handleSignOut}
+            className="flex w-full items-center justify-between py-3 text-left text-[16px] font-semibold"
+          >
             로그아웃 <ChevronRight size={20} strokeWidth={2.2} aria-hidden />
           </button>
           <button className="flex w-full items-center justify-between py-3 text-left text-[16px] font-semibold text-destructive">

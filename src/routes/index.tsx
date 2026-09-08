@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Btn, Loading, Screen } from "@/components/app/ui";
+import { signInWithGoogle } from "@/lib/auth";
 import duck from "@/assets/duck.png";
 
 export const Route = createFileRoute("/")({
@@ -26,9 +28,16 @@ function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const signIn = () => {
+  const signIn = async () => {
     setLoading(true);
-    setTimeout(() => navigate({ to: "/signup" }), 900);
+    try {
+      const { isNewUser } = await signInWithGoogle();
+      navigate({ to: isNewUser ? "/signup" : "/home" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Google 로그인에 실패했어요. 다시 시도해주세요.");
+      setLoading(false);
+    }
   };
 
   return (
