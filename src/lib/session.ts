@@ -53,3 +53,8 @@ export function clearSession() {
 export function getAccessToken(): string | null {
   return getSession()?.accessToken ?? null;
 }
+
+/** 로그인된 사용자의 실제 id. 로그인 전에는 null (호출부에서 TEST_USER_ID로 폴백) */
+export function getCurrentUserId(): number | null {
+  return getSession()?.user.id ?? null;
+}

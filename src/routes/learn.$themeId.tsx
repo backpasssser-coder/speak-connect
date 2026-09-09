@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Btn, Card, DuckSays, Loading, ProgressBar, Screen } from "@/components/app/ui";
 import {
   ApiError,
+  TEST_USER_ID,
   createTodaySession,
   createThemeSession,
   submitListen,
@@ -19,6 +20,7 @@ import {
   type TurnType,
 } from "@/lib/api";
 import { ensureMicPermission, startRecording, stopRecording } from "@/lib/audioRecorder";
+import { getCurrentUserId } from "@/lib/session";
 import { SESSION_TITLE, type SessionId } from "@/lib/learning";
 import duck from "@/assets/duck.png";
 import { Volume2, Lightbulb, Mic, X, Check } from "lucide-react";
@@ -41,6 +43,11 @@ const CHAT_MIN_TURNS = 4;
 const CHAT_MAX_TURNS = 8;
 
 const THEMA_MAP: Record<"cafe" | "hospital", string> = { cafe: "CAFE", hospital: "HOSPITAL" };
+
+/** 로그인된 사용자의 실제 id. 미로그인 상태(비정상 진입)에서만 dev 테스트 id로 폴백 */
+function currentUserId(): number {
+  return getCurrentUserId() ?? TEST_USER_ID;
+}
 
 type UiKind = "listen" | "naming" | "shadowing" | "selftalk";
 
@@ -292,7 +299,7 @@ function ListenStep({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const data = await submitListen(sessionId, turn.turnId, selectedOrder);
+      const data = await submitListen(sessionId, turn.turnId, selectedOrder, currentUserId());
       setResult({ correct: data.correct });
     } catch (e) {
       submittedRef.current = false;
@@ -406,7 +413,7 @@ function NamingStep({
   const [hintText, setHintText] = useState<string | null>(null);
   const [hintLoading, setHintLoading] = useState(false);
   const { state, error, begin, finish } = useRecordAndSubmit(async (blob) => {
-    await submitNaming(sessionId, turn.turnId, blob);
+    await submitNaming(sessionId, turn.turnId, blob, currentUserId());
   });
 
   const waitLeft = useCountdown(5, stage === "wait", () => setStage("record"));
@@ -424,7 +431,7 @@ function NamingStep({
     if (hintCount >= 2 || hintLoading) return;
     setHintLoading(true);
     try {
-      const hint = await requestHint(sessionId, turn.turnId);
+      const hint = await requestHint(sessionId, turn.turnId, currentUserId());
       setHintText(hint.text);
       setHintCount((c) => c + 1);
     } catch (e) {
@@ -487,7 +494,7 @@ function RepeatStep({
 }) {
   const [stage, setStage] = useState<"wait1" | "play" | "wait2" | "record">("wait1");
   const { state, error, begin, finish } = useRecordAndSubmit(async (blob) => {
-    await submitShadowing(sessionId, turn.turnId, blob);
+    await submitShadowing(sessionId, turn.turnId, blob, currentUserId());
   });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ttsSrc = resolveMediaUrl(turn.ttsUrl);
@@ -568,7 +575,7 @@ function SpontaneousStep({
 }) {
   const [stage, setStage] = useState<"wait" | "record">("wait");
   const { state, error, begin, finish } = useRecordAndSubmit(async (blob) => {
-    await submitSelfTalk(sessionId, turn.turnId, blob);
+    await submitSelfTalk(sessionId, turn.turnId, blob, currentUserId());
   });
   const waitLeft = useCountdown(5, stage === "wait", () => setStage("record"));
 
@@ -630,7 +637,7 @@ function ChatFlow({ sessionId, onFinished }: { sessionId: number; onFinished: ()
     startedRef.current = true;
     (async () => {
       try {
-        const data = await submitTalk(sessionId);
+        const data = await submitTalk(sessionId, undefined, currentUserId());
         setLog([{ who: "ai", text: data.aiText }]);
         setTurnNumber(data.turnNumber);
       } catch (e) {
@@ -659,7 +666,7 @@ function ChatFlow({ sessionId, onFinished }: { sessionId: number; onFinished: ()
     setWaiting(true);
     try {
       const blob = await stopRecording();
-      const data = await submitTalk(sessionId, blob);
+      const data = await submitTalk(sessionId, blob, currentUserId());
       setLog((l) => [...l, { who: "me", text: data.userText ?? "(음성으로 답변했어요)" }, { who: "ai", text: data.aiText }]);
       setTurnNumber(data.turnNumber);
     } catch (e) {
@@ -783,7 +790,9 @@ function SessionPage() {
     (async () => {
       try {
         const data =
-          id === "daily" ? await createTodaySession() : await createThemeSession(THEMA_MAP[id as "cafe" | "hospital"]);
+          id === "daily"
+            ? await createTodaySession(currentUserId())
+            : await createThemeSession(THEMA_MAP[id as "cafe" | "hospital"], currentUserId());
         setSession(data);
         setPhase("intro");
       } catch (e) {
@@ -834,7 +843,7 @@ function SessionPage() {
 
   const finishAndGoReport = async () => {
     try {
-      await finishSession(session.sessionId);
+      await finishSession(session.sessionId, currentUserId());
     } catch {
       /* 종료 집계 실패해도 결과 화면은 보여줌 */
     }
